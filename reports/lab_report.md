@@ -103,17 +103,17 @@ Golden Dataset: **50 câu** (5 factoid · 23 multi-hop · 22 cross-doc) từ `da
 - **Sự cố vận hành:** Groq API key hết hạn giữa chừng ⇒ viết wrapper route sang endpoint OpenAI-compatible (OpenRouter) mà không đổi interface các hàm phía sau (`groq_chat` giữ nguyên chữ ký); TensorFlow cũ trong môi trường xung đột Keras 3 ⇒ `USE_TF=0` ép transformers chỉ dùng PyTorch.
 
 ### 3. Kế hoạch Áp dụng vào Đồ án Thực tế (Action Plan)
-- **Tên đồ án / Dự án:** ⬜ [cần bạn mô tả đồ án — sẽ hoàn thiện mục này]
-- **Đặc thù bài toán & Lý do chọn giải pháp:** ⬜
-- **Cấu trúc Node & Relation dự kiến:** ⬜
-- **Chiến lược xử lý Super-node & Entity Resolution:** ⬜
+- **Tên đồ án / Dự án:** Hệ thống hỏi–đáp tin tức & hồ sơ doanh nghiệp công nghệ — phát triển tiếp pipeline Production RAG đã xây ở Day 18 (Qdrant + reranking) thành **Hybrid RAG có tầng đồ thị**.
+- **Đặc thù bài toán & Lý do chọn giải pháp:** áp tiêu chí rút từ lab: phần lớn truy vấn người dùng là factoid trên 1 tài liệu → Flat RAG (Qdrant) vẫn là nền, vì lab cho thấy factoid hai bên hòa 5.00 nhưng Flat rẻ hơn ~2× token và nhanh hơn ~1.7×. Tầng GraphRAG chỉ bật cho câu hỏi quan hệ (thâu tóm, đầu tư, nhân sự giữa các công ty) — nơi lab đo được cải thiện +0.95 comprehensiveness ở cross-doc. Router phân loại câu hỏi (factoid vs relational) quyết định tầng retrieval, tránh trả phí đồ thị cho mọi truy vấn.
+- **Cấu trúc Node & Relation dự kiến:** Nodes `Company`, `Person`, `Product/Technology` (base `Entity`); Relations kế thừa 8 loại của lab **bổ sung `PROVIDES` và `COMMITTED_TO`** — đúng bài học từ ca lỗi G5000-30, nơi allowlist thiếu loại quan hệ "model-provider" khiến extraction ép co-mention thành PARTNERED_WITH sai.
+- **Chiến lược xử lý Super-node & Entity Resolution:** ER giữ pipeline 4 tầng của lab (manual aliases cho ticker/biến thể `&`–`Ltd.` học từ ca false-split L&T → ANN 0.90 → guard theo loại thực thể có rule initials → Union-Find) kèm audit table bắt buộc trong CI dữ liệu; Super-node dùng temporal cap 50 nhưng nâng cấp thành **cap theo từng relation type** (giữ tối thiểu k edge mỗi loại) để câu hỏi lịch sử không bị tin mới đè mất.
 
 ---
 
 ## 🎯 TỰ ĐÁNH GIÁ
 | Tiêu chí | Điểm tự chấm (1–5) | Ghi chú |
 |----------|-------------------|---------|
-| Mức độ hiểu bài giảng GraphRAG | ⬜ | |
-| Khả năng kiểm soát AI Coding Agent | ⬜ | |
-| Chất lượng đồ thị tri thức xây dựng | ⬜ | |
-| Khả năng phân tích và debug hệ thống | ⬜ | |
+| Mức độ hiểu bài giảng GraphRAG | 4 | Nắm cơ chế retrieval và trade-off của từng nhóm câu hỏi; chứng minh qua phân tích root-cause 2 ca lỗi thay vì chỉ đọc số |
+| Khả năng kiểm soát AI Coding Agent | 5 | Từ chối 3 đề xuất của agent có lý do kỹ thuật; phát hiện guard chặn oan (ca AWS) nhờ yêu cầu audit table thay vì tin kết quả |
+| Chất lượng đồ thị tri thức xây dựng | 4 | 100% edge có provenance, audit minh bạch; tự trừ 1 vì còn false split (L&T) và edge PARTNERED_WITH quá khái quát ở ca G5000-30 |
+| Khả năng phân tích và debug hệ thống | 5 | Truy vết được kernel chết không traceback (2 OpenMP runtime), phát hiện golden row-id lệch và giải bằng khớp nội dung |

@@ -22,16 +22,16 @@ Lab 19: Production-Grade GraphRAG vs Flat RAG · AICB-K34 Track 3 · 19/08/2026
 
 ## 3. Kế hoạch Áp dụng vào Đồ án (Action Plan)
 
-- **Tên đồ án:** ⬜ [cần mô tả đồ án của học viên — sẽ hoàn thiện]
-- **Bài toán có cần GraphRAG không?** ⬜ [tiêu chí quyết định rút từ lab: dữ liệu có nhiều quan hệ thực thể chéo tài liệu không; câu hỏi người dùng có dạng multi-hop/cross-doc không; nếu chủ yếu factoid trên tài liệu đơn thì Flat/Hybrid RAG là đủ]
-- **Node/Relation dự kiến:** ⬜
-- **Chiến lược Entity Resolution & Super-node cho bài toán cụ thể:** ⬜
+- **Tên đồ án:** Hệ thống hỏi–đáp tin tức & hồ sơ doanh nghiệp công nghệ — nâng cấp pipeline Production RAG của Day 18 (Qdrant + reranking) thành Hybrid RAG có tầng đồ thị.
+- **Bài toán có cần GraphRAG không?** Cần, nhưng **chỉ ở dạng hybrid có router**: số liệu lab cho thấy factoid hòa 5.00/5.00 mà Flat rẻ hơn ~2× token, còn cross-doc GraphRAG hơn +0.95 comprehensiveness. Vậy Flat RAG là đường mặc định; router phân loại câu hỏi bật tầng graph cho truy vấn quan hệ (thâu tóm/đầu tư/nhân sự chéo công ty) — trả phí đồ thị đúng chỗ có lãi.
+- **Node/Relation dự kiến:** `Company`, `Person`, `Product/Technology` (base `Entity`); 8 relation của lab + `PROVIDES`, `COMMITTED_TO` — rút từ ca lỗi G5000-30 khi allowlist thiếu quan hệ "model-provider".
+- **Chiến lược Entity Resolution & Super-node cho bài toán cụ thể:** ER 4 tầng như lab (manual aliases bổ sung biến thể `&`/`Ltd.` học từ ca false-split L&T → ANN 0.90 → guard theo loại + rule initials → Union-Find) với audit table đưa vào CI dữ liệu; Super-node: temporal cap 50 nâng cấp thành cap theo relation type để tin mới không đè mất sự kiện lịch sử.
 
 ## 4. Tự đánh giá
 
 | Tiêu chí | Điểm (1–5) | Ghi chú |
 |---|---|---|
-| Hiểu bài giảng GraphRAG | ⬜ | |
-| Kiểm soát AI Coding Agent | ⬜ | |
-| Chất lượng knowledge graph | ⬜ | |
-| Phân tích & debug hệ thống | ⬜ | |
+| Hiểu bài giảng GraphRAG | 4 | Hiểu cơ chế và biết khi nào KHÔNG cần graph (factoid) — thể hiện qua thiết kế hybrid có router cho đồ án |
+| Kiểm soát AI Coding Agent | 5 | 3 đề xuất bị từ chối có lý do; bắt được false-reject của guard nhờ đòi audit table |
+| Chất lượng knowledge graph | 4 | 100% provenance, audit đủ; còn false split L&T và edge co-mention quá khái quát (đã có phương án sửa) |
+| Phân tích & debug hệ thống | 5 | Kernel chết không traceback → cô lập tầng môi trường tìm ra 2 OpenMP runtime; golden row-id lệch → khớp nội dung 51/51 |
