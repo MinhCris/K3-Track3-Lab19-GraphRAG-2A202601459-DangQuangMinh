@@ -1,0 +1,15 @@
+type,left,right,similarity,decision
+Company,L T Technology Services,L&T Technology Services Limited,0.8944270610809326,REJECT_THRESHOLD
+Company,L T Technology Services,L&T Technology Services Ltd.,0.8427854776382446,REJECT_THRESHOLD
+Company,NVIDIA,Nvidia Corp.,0.8276873826980591,REJECT_THRESHOLD
+Company,Google Cloud,Google Cloud Platform,0.892151951789856,REJECT_THRESHOLD
+Company,Amazon Web Services,Amazon Web Services (AWS),0.9287389516830444,MERGE_VECTOR
+Company,Fidelity National Information Services,Fidelity National Information Services Inc.,0.9245240092277527,MERGE_VECTOR
+Company,SIOS Technology,SIOS Technology Corp.,0.8428013324737549,REJECT_THRESHOLD
+Company,Synechron Inc.,Synechron,0.8279041051864624,REJECT_THRESHOLD
+Company,L&T Technology Services Ltd.,L&T Technology Services Limited,0.8906950950622559,REJECT_THRESHOLD
+Technology,generative AI,generative AI capabilities,0.8564842939376831,REJECT_THRESHOLD
+Technology,AI service,AI services,0.9676467180252075,MERGE_VECTOR
+Technology,AI service,AI cloud services,0.8181155920028687,REJECT_THRESHOLD
+Technology,AI cloud services,AI services,0.8424495458602905,REJECT_THRESHOLD
+Technology,AI cloud services,cloud computing service for artificial intelligence,0.8146957159042358,REJECT_THRESHOLD

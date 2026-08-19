@@ -15,8 +15,9 @@
 
 *Trả lời:*
 - **Đặc thù dữ liệu:** mỗi bản ghi của corpus (mirror `MongoDB/tech-news-embeddings`) chỉ gồm `title + description` (~40–50 từ), nên mỗi bài = 1 chunk. Đại từ/cụm generic (`the company`, `it`, `they`) xuất hiện chủ yếu trong `description` và tiền ngữ thường nằm ở `title`.
-- **Ví dụ từ dữ liệu:** ⬜ [chép từ phần "Spot-check" in ra ở cell 1.7 — chunk_id + câu GỐC vs RESOLVED]
-- **Tình huống phân giải sai/khó:** nhiều bản tin dạng điểm tin nhắc ≥2 công ty ngay trong title (ví dụ các bài dạng "X and Y Partner to..."). Khi description viết "the company announced...", tiền ngữ mơ hồ giữa X và Y; theo quy tắc conservative, model phải giữ nguyên và ghi vào `unresolved_mentions` — mọi trường hợp model vẫn "đoán" là một ca sai tiềm năng.
+- **Ví dụ từ dữ liệu (chạy thật):** chunk `art_000399::c0000` — *"Tyber Medical LLC has acquired ADSM-Synchro Medical a French company for an undisclosed price as **the company** expands internationally"* → resolved thành *"...as **Tyber Medical** expands internationally"*. Đây đúng kiểu ca mơ hồ nguy hiểm: câu chứa 2 công ty (Tyber Medical và ADSM-Synchro), "the company" resolve sai sang ADSM-Synchro sẽ tạo false edge về việc công ty Pháp này "mở rộng quốc tế".
+- **Ca gặp khó khăn thực tế:** chunk `art_000033::c0000` (bài Aeris–Ericsson) — text gốc bị cắt cụt *"...and related assets **to be**"*, model đã tự hoàn thành thành *"...are to be **acquired**."*. Suy diễn này hợp lý (title là "Aeris to Acquire IoT Business from Ericsson") nhưng về nguyên tắc là thêm từ không có trong văn bản — đúng ranh giới mà quy tắc conservative phải canh chừng.
+- **Thống kê lần chạy:** 400 chunks qua coref; 359 chunk có chỉnh sửa nhưng soi diff thì phần lớn chỉ là chuẩn hóa dấu câu/lỗi escape (`''`→`'`) — chỉ 3 chunk thực sự phân giải generic reference ("the company"/"the firm"); 17 mentions trên 15 chunks được log vào `unresolved_mentions`. Quan sát đáng giá: LLM có xu hướng "tiện tay" copy-edit vượt mandate dù prompt chỉ yêu cầu resolve — một lý do nữa để giữ quy tắc conservative và audit diff.
 - **Hậu quả đối với Graph:** phân giải sai chủ ngữ ⇒ NER+RE trích ra **false edge** gán sự kiện (ACQUIRED / INVESTED_IN...) cho nhầm công ty. False edge nguy hiểm hơn missing edge vì BFS traversal sẽ lan truyền dữ kiện sai vào context của mọi câu hỏi đi qua node đó, kèm cả "evidence" trông có vẻ hợp lệ.
 - **Biện pháp đã cài đặt:** prompt conservative (chỉ resolve khi tiền ngữ rõ trong cùng chunk, cấm bịa, giữ nguyên số/ngày/ticker), log `unresolved_mentions`, batch nào lỗi thì fallback giữ nguyên văn bản gốc và đánh dấu `COREF_BATCH_FAILED` thay vì làm hỏng dữ liệu.
 
@@ -26,7 +27,8 @@
 
 *Trả lời:*
 - **Ngưỡng cosine similarity:** `threshold = 0.90` cho quyết định merge (ANN top-5, embedding MiniLM-L6-v2 chuẩn hóa). Ngoài ra mọi cặp candidate có similarity ≥ `0.80` đều được ghi vào audit với nhãn `REJECT_THRESHOLD` để hậu kiểm near-miss — audit vì thế luôn minh bạch và đủ dày.
-- **Cặp bị Guard chặn (similarity > 0.85):** ⬜ [chép 1 dòng `REJECT_GUARD` từ bảng audit cell 2.2 / `outputs/entity_resolution_audit.csv`]. Trong lần chạy thử khi phát triển bài, cặp điển hình là `generative AI` vs `Generative AI Solution` (cosine ≈ 0.91): vector coi là gần nhau nhưng một bên là công nghệ tổng quát, một bên là tên sản phẩm cụ thể — gộp sẽ làm sai lệch mọi quan hệ DEVELOPED/USES đi qua node này.
+- **Cặp bị Guard chặn (similarity > 0.85):** lần chạy chính thức audit có 14 dòng (11 `REJECT_THRESHOLD`, 3 `MERGE_VECTOR`) và guard **không phải chặn cặp nào ≥ 0.85** — nhưng chính điều đó là kết quả của một vòng lặp thiết kế có bằng chứng: ở lần chạy thử khi phát triển, guard token-subset đã chặn `Amazon Web Services` vs `Amazon Web Services (AWS)` (cosine 0.9287) — một **false reject** vì "AWS" chỉ là viết tắt; sau khi bổ sung rule initials, lần chạy chính thức cặp này được `MERGE_VECTOR` đúng (dòng hiện hữu trong audit). Lần chạy thử cũng ghi nhận guard chặn đúng `generative AI` vs `Generative AI Solution` (≈ 0.91) — công nghệ tổng quát vs tên sản phẩm.
+- **Near-miss đáng chú ý (từ nhãn `REJECT_THRESHOLD`):** `L T Technology Services` vs `L&T Technology Services Limited` (0.894) — cùng một công ty nhưng nằm **dưới** ngưỡng 0.90 nên không merge, dẫn đến false split (cả hai xuất hiện tách node trong đồ thị). Đây là trade-off trung thực của ngưỡng 0.90: giảm false merge nhưng chịu vài false split; cách xử lý đúng là thêm manual alias cho các biến thể `&`/`Ltd.` thay vì hạ ngưỡng toàn cục.
 - **Cơ chế guard (thiết kế theo loại thực thể):**
   - `Person`: họ (token cuối) phải trùng tuyệt đối, tên phải là prefix/viết tắt của nhau ⇒ chặn *Sam Altman* vs *Steve Altman* dù vector similarity rất cao.
   - `Company/Technology`: nếu tên A là token-subset thực sự của tên B và phần thừa không phải hậu tố doanh nghiệp (Inc/Corp/Platforms...) ⇒ nghi là product/sub-brand, từ chối merge (*Apple* vs *Apple Watch*, *Microsoft* vs *Microsoft Teams*), nhưng *Meta* vs *Meta Platforms* vẫn merge nhờ strip suffix.
@@ -41,9 +43,9 @@
 
 | Hạng | Tên thực thể | Loại thực thể (Type) | Bậc kết nối (Degree) |
 |------|--------------|---------------------|----------------------|
-| 1 | ⬜ | ⬜ | ⬜ |
-| 2 | ⬜ | ⬜ | ⬜ |
-| 3 | ⬜ | ⬜ | ⬜ |
+| 1 | Microsoft | Company | 17 |
+| 2 | ServiceNow | Company | 9 |
+| 3 | OpenAI | Company | 7 |
 
 - **Lưu ý trung thực về quy mô:** với scale guard 400 chunks trích xuất, đồ thị lab không tạo ra node degree > 100, nên policy được kiểm chứng bằng 2 cách: (1) `test_supernode_policy()` trên node bậc cao nhất, (2) `test_supernode_policy_simulated()` ép node bậc cao nhất qua cap và assert 2 bất biến: số edge trả về ≤ 50 và sort đúng `published_date DESC`. Ở scale thật (350MB) các hub như Microsoft/Google chắc chắn vượt 100.
 - **Ưu điểm của temporal cap (50 edge mới nhất):** chặn bùng nổ context/token tại hub; tin mới thường phản ánh trạng thái quan hệ hiện hành (deal đã đóng thay vì mới công bố); kết hợp `GLOBAL_EDGE_CAP = 250` và `MAX_GRAPH_CONTEXT_CHARS = 14000` tạo 3 tầng chặn.
@@ -59,15 +61,15 @@ Golden Dataset: **50 câu** (5 factoid · 23 multi-hop · 22 cross-doc) từ `da
 
 | Tiêu chí đánh giá | Flat RAG | GraphRAG | Độ chênh lệch (Δ) | Nhận xét phân tích |
 |-------------------|----------|----------|--------------------------|-------------------|
-| **Comprehensiveness (1–5)** | ⬜ | ⬜ | ⬜ | ⬜ |
-| **Faithfulness (1–5)** | ⬜ | ⬜ | ⬜ | ⬜ |
-| **Multi-hop Reasoning (1–5)** | ⬜ | ⬜ | ⬜ | ⬜ |
-| **Latency trung bình (s)** | ⬜ | ⬜ | ⬜ | Latency đo end-to-end: GraphRAG gồm cả seed extraction (1 LLM call) + BFS Neo4j |
-| **Token usage trung bình** | ⬜ | ⬜ | ⬜ | GraphRAG dùng context kép (GRAPH + VECTOR) nên token cao hơn |
+| **Comprehensiveness (1–5)** | 3.56 | 4.26 | **+0.70** | Chênh lớn nhất ở cross-doc: 3.18 → 4.14 (+0.95, "GraphRAG cải thiện rõ") và multi-hop: 3.61 → 4.22 (+0.61); factoid hòa 5.00 |
+| **Faithfulness (1–5)** | 4.08 | 4.42 | +0.34 | Context đồ thị kèm provenance giúp câu trả lời bám dẫn chứng hơn |
+| **Multi-hop Reasoning (1–5)** | 3.92 | 4.22 | +0.30 | Riêng factoid GraphRAG thấp hơn (4.60 vs 5.00) — context đồ thị thừa thãi cho câu 1 dữ kiện |
+| **Latency trung bình (s)** | 2.38 | 4.05 | +1.67s | Đo end-to-end: GraphRAG gồm seed extraction (1 LLM call) + BFS Neo4j + generation |
+| **Token usage trung bình** | 690 | 1326 | ×1.92 | GraphRAG dùng context kép (`=== GRAPH ===` + `=== VECTOR ===`) |
 
-#### Phân tích 2 Ca lỗi Điển hình (chi tiết trong `reports/failure_analysis.md`):
-1. **Ca Flat RAG thất bại (GraphRAG thành công):** ⬜ [chọn từ `outputs/graphrag_eval_results.csv` — câu có `graph_comprehensiveness − flat_comprehensiveness` lớn nhất; xem snippet chọn ca trong failure_analysis.md]
-2. **Ca GraphRAG thất bại / cả hai cùng kém:** ⬜ [câu có delta âm nhất; truy vết theo quy trình root-cause trong failure_analysis.md]
+#### Phân tích 2 Ca lỗi Điển hình (root-cause đầy đủ trong `reports/failure_analysis.md`):
+1. **Ca Flat RAG thất bại (GraphRAG thành công): G5000-23** (cross-doc) — comprehensiveness Flat **1** vs Graph **5**. Câu hỏi phân biệt 2 bản tin Microsoft/ChatGPT; Flat RAG chỉ retrieve được bài "private ChatGPT" (gần câu hỏi về từ vựng) và tuyên bố "không thấy confirmed use case", trong khi bài DEWA dùng ChatGPT bị top-6 cosine bỏ sót. GraphRAG đi từ seed Microsoft/ChatGPT theo edge tới node DEWA và trả lời đúng cả 2 vế kèm chunk_id.
+2. **Ca GraphRAG thất bại: G5000-30** (multi-hop) — comprehensiveness Flat 2 vs Graph **1**. Đồ thị chứa edge `Google -PARTNERED_WITH-> Meta` được trích từ ngữ cảnh đồng-xuất-hiện (Llama 2 lên Google Cloud / danh sách cam kết AI), model bám vào edge sai này thay vì quan hệ "model-provider" — vốn **không tồn tại trong 8 loại allowlist**. Lỗi kép: extraction ép co-mention thành PARTNERED_WITH + schema thiếu loại quan hệ phù hợp.
 
 ---
 

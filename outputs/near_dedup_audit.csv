@@ -1,0 +1,70 @@
+left_id,right_id,left_title,right_title,similarity,decision
+art_000008,art_002881,Tech Media & Telecom Roundup: Market Talk,Tech Media & Telecom Roundup: Market Talk,0.9449,DROP_NEAR_DUP
+art_000008,art_002079,Tech Media & Telecom Roundup: Market Talk,Tech Media & Telecom Roundup: Market Talk,0.9219,DROP_NEAR_DUP
+art_000010,art_000662,Dragos Launches OT Cyber Industry''s Only Global Partner Program to Span Technol,Dragos Launches OT Cyber Industry’s Only Global Partner Program to Span Technolo,0.9738,DROP_NEAR_DUP
+art_000012,art_002043,The best video streaming services in 2023,The best video streaming services in 2023,0.9811,DROP_NEAR_DUP
+art_000025,art_001635,New Sensor Chip Detects Disease Pathogens with 10x Sensitivity,New sensor chip advances rapid cost-effective disease diagnostics,0.9228,DROP_NEAR_DUP
+art_000032,art_002881,Tech Media & Telecom Roundup: Market Talk,Tech Media & Telecom Roundup: Market Talk,0.9399,ALREADY_DROPPED
+art_000033,art_002840,Aeris to Acquire IoT Business from Ericsson,Aeris to acquire IoT business from Ericsson,0.9536,KEEP_EVIDENCE
+art_000034,art_002612,Ceinsys Tech Ltd: A specialized GIS & Mobility engineering services provider cel,Ceinsys Tech Ltd: A specialized GIS & Mobility engineering services provider cel,0.9784,DROP_NEAR_DUP
+art_000034,art_000059,Ceinsys Tech Ltd: A specialized GIS & Mobility engineering services provider cel,Ceinsys Tech Ltd: A specialized GIS & Mobility engineering services provider cel,0.9391,DROP_NEAR_DUP
+art_000043,art_002987,Samsung Showcases Groundbreaking Logic Innovations at System LSI Tech Day 2023,Samsung Showcases Groundbreaking Logic Innovations at System LSI Tech Day 2023,0.9955,KEEP_EVIDENCE
+art_000046,art_001070,IAS provides verification solution to Amazon Publisher Services Connections Mark,IAS provides verification solution to Amazon Publisher Services Connections Mark,0.934,DROP_NEAR_DUP
+art_000049,art_000254,Information Services Group Inc. (III) Q4 2022 Earnings Call Transcript,Information Services Group Inc. (III) Q2 2023 Earnings Call Transcript,0.9358,DROP_NEAR_DUP
+art_000059,art_002612,Ceinsys Tech Ltd: A specialized GIS & Mobility engineering services provider cel,Ceinsys Tech Ltd: A specialized GIS & Mobility engineering services provider cel,0.9387,ALREADY_DROPPED
+art_000067,art_000107,Synechron opens Montreal delivery centre,Synechron Announces the Opening of its Montreal Canada Nearshore Delivery Centre,0.9731,DROP_NEAR_DUP
+art_000073,art_000268,The Institution of Engineering and Technology (IET) successfully concludes IET F,The Institution of Engineering and Technology (IET) successfully concludes IET F,0.9943,DROP_NEAR_DUP
+art_000074,art_001018,L&T Technology Services Selected as Strategic Engineering Partner to Airbus for ,L&T Technology Services Selected as Strategic Engineering Partner to Airbus for ,0.9814,DROP_NEAR_DUP
+art_000103,art_000264,Crexendo Inc.: Crexendo Adds Jenne Inc. as New Technology Services Brokerage Par,Crexendo Adds Jenne Inc. as New Technology Services Brokerage Partner,0.9895,DROP_NEAR_DUP
+art_000122,art_000303,L T Technology Services and Qualcomm Selected by Thales for Enabling 5G Private ,L&T Technology Services and Qualcomm Selected by Thales for Enabling 5G Private ,0.9889,KEEP_EVIDENCE
+art_000122,art_000307,L T Technology Services and Qualcomm Selected by Thales for Enabling 5G Private ,L&T Technology Services and Qualcomm Selected by Thales for Enabling 5G Private ,0.9704,KEEP_EVIDENCE
+art_000125,art_001439,Sensormatic Solutions by Johnson Controls shares 2022 U.S. Super Saturday shoppe,Sensormatic Solutions by Johnson Controls shares 2022 U.S. Super Saturday shoppe,0.9994,DROP_NEAR_DUP
+art_000125,art_002723,Sensormatic Solutions by Johnson Controls shares 2022 U.S. Super Saturday shoppe,Sensormatic Solutions by Johnson Controls shares 2022 U.S. Super Saturday shoppe,0.9305,DROP_NEAR_DUP
+art_000202,art_002731,Syzygy Plasmonics Selects Emerson to Automate Electrification of Chemical Produc,Syzygy Plasmonics selects Emerson to automate electrification of chemical produc,0.9554,DROP_NEAR_DUP
+art_000204,art_000688,Technology Services (CITE),Technology Services (CITE),0.9965,DROP_NEAR_DUP
+art_000213,art_000604,Smart Eye Signs Breakthrough Deal for AIS Driver Monitoring System for Fleets wi,Smart Eye Signs Breakthrough Deal for AIS Driver Monitoring System for Fleets wi,0.9844,DROP_NEAR_DUP
+art_000215,art_000398,Integrated Electrical Services: Fiscal Q4 Earnings Snapshot,Integrated Electrical Services: Fiscal Q1 Earnings Snapshot,0.9588,DROP_NEAR_DUP
+art_000216,art_002881,Tech Media & Telecom Roundup: Market Talk,Tech Media & Telecom Roundup: Market Talk,0.9301,ALREADY_DROPPED
+art_000226,art_000960,Systems Solution Inc. Opens New Company Headquarters and Depot Services in Wayne,Systems Solution Inc. Opens New Company Headquarters and Depot Services in Wayne,0.9832,DROP_NEAR_DUP
+art_000256,art_001639,DEWA is the first utility in the world to enrich its services with ChatGPT techn,DEWA is the first utility in the world to enrich its services with ChatGPT techn,0.9854,KEEP_EVIDENCE
+art_000303,art_000307,L&T Technology Services and Qualcomm Selected by Thales for Enabling 5G Private ,L&T Technology Services and Qualcomm Selected by Thales for Enabling 5G Private ,0.9746,KEEP_EVIDENCE
+art_000338,art_002051,Thursday Sector Laggards: Technology & Communications Services,Thursday Sector Laggards: Services Technology & Communications,0.9401,DROP_NEAR_DUP
+art_000345,art_002489,Sensient Announces Conference Call,Sensient Announces Conference Call,0.9754,DROP_NEAR_DUP
+art_000348,art_002881,Tech Media & Telecom Roundup: Market Talk,Tech Media & Telecom Roundup: Market Talk,0.9487,ALREADY_DROPPED
+art_000381,art_000929,Best VoIP Services (September 2023),Best VoIP Services (July 2023),0.9923,DROP_NEAR_DUP
+art_000397,art_003042,Top 10 Pros and Cons of Smart Technology,Top 10 Pros and Cons of Smart Technology,0.9565,DROP_NEAR_DUP
+art_000400,art_002881,Tech Media & Telecom Roundup: Market Talk,Tech Media & Telecom Roundup: Market Talk,0.9384,ALREADY_DROPPED
+art_000519,art_001514,Key Tronic Corporation Announces Second Quarter Reporting Date,Key Tronic Corporation Announces Third Quarter Reporting Date,0.9696,DROP_NEAR_DUP
+art_000521,art_000830,ServiceNow introduces new generative AI solution Now Assist,ServiceNow introduces new generative AI solution Now Assist for Virtual Agent to,0.9655,DROP_NEAR_DUP
+art_000558,art_000895,Truescope Acquires US Firm Universal Information Services,Truescope Acquires US Firm Universal Information Services,0.9789,DROP_NEAR_DUP
+art_000558,art_003072,Truescope Acquires US Firm Universal Information Services,Truescope Acquires US Firm Universal Information Services,0.9665,DROP_NEAR_DUP
+art_000576,art_001379,Friday Sector Laggards: Services Technology & Communications,Friday Sector Laggards: Technology & Communications Services,0.9626,DROP_NEAR_DUP
+art_000576,art_001191,Friday Sector Laggards: Services Technology & Communications,Wednesday Sector Laggards: Services Technology & Communications,0.9437,DROP_NEAR_DUP
+art_000617,art_000949,Fidelity National Information Services (FIS) Stock Moves -0.9%: What You Should ,Fidelity National Information Services (FIS) Stock Moves -0.9%: What You Should ,0.987,DROP_NEAR_DUP
+art_000624,art_001304,Applied Information Integrates IoT Connectivity with Alpha Technologies UPS to P,Applied Information Integrates IoT Connectivity with Alpha Technologies UPS to P,0.9679,DROP_NEAR_DUP
+art_000823,art_002176,Sensience closing Cincinnati manufacturing facility laying off 42,Sensience closing Cincinnati manufacturing facility laying off 42,0.9712,DROP_NEAR_DUP
+art_000829,art_001012,Russian tech giant Yandex says code leaked in cybersecurity incident,Russian tech giant Yandex says code leaked in cybersecurity incident,0.9946,DROP_NEAR_DUP
+art_000895,art_003072,Truescope Acquires US Firm Universal Information Services,Truescope Acquires US Firm Universal Information Services,0.9936,ALREADY_DROPPED
+art_000901,art_002291,Syndio Partners with Broadridge for Pay Equity as Financial Services Sector Look,Syndio Partners with Broadridge for Pay Equity as Financial Services Sector Look,0.952,DROP_NEAR_DUP
+art_000910,art_003055,What are some of the latest trends and innovations in VPN technology and service,What are some of the latest trends and innovations in VPN technology and service,0.989,DROP_NEAR_DUP
+art_000917,art_001887,Alight launches new behavioral health navigation services aimed at supporting in,Alight launches new behavioral health navigation services aimed at supporting in,0.9891,DROP_NEAR_DUP
+art_001029,art_002299,Information Services Group (ISG) Names Unisys a Leader in Public Cloud Report,Information Services Group (ISG) Names Unisys a Leader in Public Cloud Report,0.987,DROP_NEAR_DUP
+art_001052,art_001629,Brain implant startup backed by Bezos and Gates is testing mind-controlled compu,Brain implant startup backed by Bezos and Gates is testing mind-controlled compu,0.9396,DROP_NEAR_DUP
+art_001068,art_001260,Information Services Group Inc. (NASDAQ:III) is a favorite amongst institutional,Information Services Group Inc. (NASDAQ:III) is a favorite amongst institutional,0.9955,DROP_NEAR_DUP
+art_001157,art_001346,CereCore® expands healthcare technology services into the UK,CereCore expands healthcare technology services into the UK,0.9923,DROP_NEAR_DUP
+art_001212,art_001588,Integrated Electrical Services: Fiscal Q2 Earnings Snapshot,Integrated Electrical Services: Fiscal Q3 Earnings Snapshot,0.9679,DROP_NEAR_DUP
+art_001333,art_001337,US announces criminal cases involving flow of technology information to Russia C,US announces criminal cases involving flow of technology information to Russia C,0.9965,DROP_NEAR_DUP
+art_001371,art_001519,Trackers with sensing tech could interfere with implantable cardiac devices: stu,Wearable fitness trackers with sensing technology could interfere with implantab,0.9886,DROP_NEAR_DUP
+art_001433,art_002146,Onyenso to leave UK plans to enter transfer portal,Onyenso to leave UK plans to enter transfer portal,0.9883,DROP_NEAR_DUP
+art_001439,art_002723,Sensormatic Solutions by Johnson Controls shares 2022 U.S. Super Saturday shoppe,Sensormatic Solutions by Johnson Controls shares 2022 U.S. Super Saturday shoppe,0.9282,ALREADY_DROPPED
+art_001510,art_001782,S.Korea''s Yoon calls strategy meeting to boost rechargeable batteries semicondu,S.Korea''s Yoon calls strategy meeting to boost chip battery sectors,0.9573,DROP_NEAR_DUP
+art_001637,art_001741,Syxsense Brings Natural Language Processing to Endpoint Management and Security ,Syxsense Announces AI-Powered Cortex Copilot Bringing Natural Language Processin,0.9206,DROP_NEAR_DUP
+art_001709,art_003049,Service Corporation (SCI) Benefits From Its Focus on Expansion,Service Corporation (SCI) Benefits From Its Focus on Expansion,0.9588,DROP_NEAR_DUP
+art_001729,art_002809,JFrog Welcomes Seasoned Technology and Security Leader Aran Azarzar as Chief Inf,JFrog Welcomes Seasoned Technology and Security Leader Aran Azarzar as Chief Inf,0.9567,DROP_NEAR_DUP
+art_001811,art_001950,SIOS Technology Announces Cloud Availability Symposium 2023: Disaster Recovery M,SIOS Technology Announces Cloud Availability Symposium 2023: Disaster Recovery M,0.9949,DROP_NEAR_DUP
+art_001869,art_001970,ASEAN Safety Sensors and Switches Market New Technological Development Projectin,ASEAN Safety Sensors and Switches Market Research Segmentation Key Players Analy,0.9408,DROP_NEAR_DUP
+art_002079,art_002881,Tech Media & Telecom Roundup: Market Talk,Tech Media & Telecom Roundup: Market Talk,0.9321,ALREADY_DROPPED
+art_002188,art_002651,Q-SYS to Support Spatial Audio for Microsoft Teams Rooms,Q-SYS to Support Spatial Audio for Microsoft Teams Rooms,0.9893,DROP_NEAR_DUP
+art_002611,art_002855,Embracing the technology to transform the financial services world,The technology to transform the financial services world,0.9536,DROP_NEAR_DUP
+art_003986,art_003993,Exclusive: Amazon has drawn thousands to try its AI service competing with Micro,Amazon has drawn thousands to try its AI service competing with Microsoft Google,0.9687,KEEP_EVIDENCE
+art_004023,art_005248,Microsoft says early June disruptions to Outlook cloud platform were cyberattack,Microsoft Says Early June Disruptions to Outlook Cloud Platform Were Cyberattack,0.9372,KEEP_EVIDENCE

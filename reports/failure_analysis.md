@@ -25,19 +25,19 @@ display(r.nsmallest(3, "delta")[["id","group","delta","question"]])  # ứng vi�
 
 ---
 
-## Ca 1 — Flat RAG thất bại, GraphRAG thành công
+## Ca 1 — Flat RAG thất bại, GraphRAG thành công: **G5000-23** (cross-doc)
 
-- **Question ID & Câu hỏi:** ⬜
-- **Điểm judge:** Flat ⬜ vs Graph ⬜ (comprehensiveness) · rationale: ⬜
-- **Tại sao Flat RAG thất bại?** ⬜ [điển hình cho nhóm multi-hop/cross-doc: dữ kiện nằm rải ở ≥2 bài; top-6 chunk theo cosine chỉ gom được các bài giống câu hỏi về mặt từ vựng, thiếu mắt xích trung gian]
-- **GraphRAG giải quyết thế nào?** ⬜ [liệt kê chuỗi edge thực tế từ phần `=== GRAPH ===`: A -REL→ B -REL→ C kèm date/chunk_id]
+- **Câu hỏi:** *"Which Microsoft-related story is a confirmed external customer use of ChatGPT, and which is only a reported potential product for businesses?"*
+- **Điểm judge (comprehensiveness):** Flat **1** vs Graph **5** (multi-hop reasoning cũng 1 vs 5).
+- **Tại sao Flat RAG thất bại?** Truy vết tầng context: top-6 cosine chỉ gom được bài "Microsoft private ChatGPT" (`art_007711`) — bài trùng từ vựng mạnh với câu hỏi (Microsoft, ChatGPT, businesses) — và **bỏ sót hoàn toàn bài DEWA** (`art_000256`): tiêu đề bài này nói về "DEWA... first utility in the world", gần như không chia sẻ từ vựng với câu hỏi. Flat answer thành thật thú nhận *"confirmed external customer use... is not explicitly mentioned in the provided context"* — tức lỗi nằm ở **retrieval**, không phải generation. Judge rationale xác nhận: *"completely misses the confirmed customer use case (DEWA's February announcement)"*.
+- **GraphRAG giải quyết thế nào?** Seed extraction trích Microsoft/ChatGPT → match node trong Neo4j → BFS 2 hop đi theo edge tới node DEWA (quan hệ USES/PARTNERED_WITH quanh ChatGPT/Microsoft), kéo được chunk `art_000256::c0000` vào context. Graph answer trả lời đúng cả 2 vế, dẫn đúng 2 chunk_id (`art_000256` cho vế confirmed, `art_007711` cho vế potential). Đây là cơ chế thắng đặc trưng của GraphRAG: **nối dữ kiện qua thực thể trung gian khi từ vựng không giao nhau**.
 
-## Ca 2 — GraphRAG thất bại hoặc cả hai cùng kém
+## Ca 2 — GraphRAG thất bại: **G5000-30** (multi-hop, cả hai cùng kém — Graph kém hơn)
 
-- **Question ID & Câu hỏi:** ⬜
-- **Điểm judge:** Flat ⬜ vs Graph ⬜ · rationale: ⬜
-- **Nguyên nhân (theo quy trình trên, dừng ở tầng hỏng đầu tiên):** ⬜ [các nguyên nhân thường gặp đã lường trước trong thiết kế: (a) seed extraction trích cụm quá rộng/hẹp nên không match node; (b) quan hệ cần thiết không thuộc 8 loại allowlist nên extraction bỏ qua; (c) dữ kiện nằm ngoài 400 chunks trích xuất; (d) graph context đúng nhưng judge chấm multi-hop thấp vì câu trả lời không nêu tường minh chuỗi suy luận]
-- **Đề xuất khắc phục:** ⬜ [khớp với nguyên nhân: mở rộng aliases/fuzzy threshold; thêm relation type; tăng ngân sách extraction có chọn lọc; prompt trả lời yêu cầu nêu chuỗi suy luận]
+- **Câu hỏi:** *"Meta appears in two different AI contexts in the selected data. What are they, and what distinct relation should the graph store in each case?"* (Ref: Meta là model-provider của Llama 2/Code Llama trên Google Cloud; và Meta nằm trong danh sách cam kết AI tự nguyện với Nhà Trắng.)
+- **Điểm judge (comprehensiveness):** Flat **2** vs Graph **1**.
+- **Nguyên nhân (root-cause, dừng ở tầng hỏng đầu tiên — tầng extraction/schema):** Graph answer khẳng định `Google [Company] -PARTNERED_WITH-> Meta [Company]` là một trong hai ngữ cảnh. Edge này có thật trong đồ thị nhưng là **edge quá khái quát**: extraction đã ép ngữ cảnh đồng-xuất-hiện (Llama 2 được đưa lên Google Cloud / hai công ty cùng nằm trong danh sách cam kết) thành PARTNERED_WITH. Sâu hơn: quan hệ đúng mà câu hỏi cần — *model-provider* và *policy-commitment* — **không tồn tại trong 8 loại relation của allowlist**, nên extraction chỉ có thể chọn nhãn gần nhất (sai). Model sinh câu trả lời bám vào edge sai trông-có-vẻ-đúng đó; judge rationale xác nhận: *"states a partnership with Google, which is not explicitly supported"*. Flat RAG cũng fail (2/5) vì bài Google Cloud Next không lọt top-6 — tức câu hỏi này khó ở cả hai kiến trúc, nhưng GraphRAG **tệ hơn vì tự tin sai** dựa trên edge nhiễu — minh họa đúng cảnh báo "false edge nguy hiểm hơn missing edge".
+- **Đề xuất khắc phục:** (1) mở rộng allowlist có kiểm soát: thêm `PROVIDES`/`COMMITTED_TO` cho domain tin AI; (2) siết prompt extraction: PARTNERED_WITH chỉ khi văn bản nêu tường minh quan hệ đối tác song phương, không suy từ đồng-xuất-hiện trong danh sách; (3) lọc edge theo `confidence` khi linearize context; (4) prompt trả lời yêu cầu nêu evidence cho từng quan hệ được khẳng định.
 
 ---
 
