@@ -2,7 +2,7 @@
 
 **Học viên:** Đặng Quang Minh (2A202601459) · Lab 19 GraphRAG vs Flat RAG · 19/08/2026
 
-> Ô ⬜ điền từ output lần chạy Colab chính thức (nguồn ghi kèm). Chi tiết mở rộng: xem `lab_report.md`.
+> Số liệu lấy từ lần chạy chính thức trên Google Colab (19/08/2026), nguồn ghi kèm từng mục. Chi tiết mở rộng: xem `lab_report.md`.
 
 ### 1. Coreference sai ở tình huống nào?
 Corpus là `title + description` (~40–50 từ/bài) nên tiền ngữ thường nằm ở title. Tình huống sai điển hình: bản tin nhắc ≥2 công ty ngay trong title ("X and Y Partner to..."), description viết "the company announced..." — tiền ngữ mơ hồ giữa X và Y. Quy tắc conservative yêu cầu giữ nguyên + log `unresolved_mentions`; nếu model vẫn resolve là ca sai tiềm năng, hậu quả là **false edge** gán sự kiện cho nhầm công ty và lan truyền qua BFS. Ví dụ thật từ lần chạy: `art_000399::c0000` — *"Tyber Medical LLC has acquired ADSM-Synchro Medical ... as **the company** expands internationally"* → resolved đúng thành **Tyber Medical** (câu chứa 2 công ty — resolve nhầm sang ADSM-Synchro sẽ sinh false edge). Ca gặp khó: `art_000033::c0000` text bị cắt cụt *"...assets to be"*, model tự hoàn thành *"are to be acquired."* — suy diễn hợp lý từ title nhưng là thêm từ không có trong văn bản. Thống kê: 400 chunks, 17 unresolved mentions/15 chunks; chỉ 3 chunk thực sự resolve generic reference, phần lớn chỉnh sửa còn lại là chuẩn hóa dấu câu.

@@ -2,7 +2,7 @@
 
 **Học viên:** Đặng Quang Minh (2A202601459) · Lab 19 · 19/08/2026
 
-> Ô ⬜ điền từ `outputs/graphrag_eval_results.csv` của lần chạy Colab chính thức.
+> Số liệu và trích dẫn trong báo cáo lấy từ lần chạy chính thức trên Google Colab (19/08/2026) — file `outputs/graphrag_eval_results.csv`.
 
 ## Quy trình truy vết nguyên nhân gốc rễ (áp dụng cho từng ca)
 

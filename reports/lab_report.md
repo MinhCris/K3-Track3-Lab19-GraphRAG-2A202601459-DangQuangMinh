@@ -5,7 +5,7 @@
 **Ngày thực hiện:** 19/08/2026
 **Môi trường:** Google Colab + Neo4j AuraDB Free · Generator/Extractor: `openai/gpt-4o-mini` (OpenRouter, fallback do Groq key hết hạn) · Judge: `google/gemini-2.5-flash` (cố ý khác model sinh để giảm self-preference bias)
 
-> **Quy ước:** các ô đánh dấu ⬜ được điền từ output của **lần chạy Colab chính thức** (nguồn ghi kèm từng ô). Mọi nội dung còn lại là quyết định thiết kế và sự kiện có thật trong quá trình làm bài.
+> **Nguồn số liệu:** toàn bộ số liệu benchmark và trích dẫn lấy từ **lần chạy chính thức trên Google Colab (19/08/2026)** — xuất tại `outputs/`. Nội dung còn lại là quyết định thiết kế và sự kiện thực tế trong quá trình làm bài.
 
 ---
 
