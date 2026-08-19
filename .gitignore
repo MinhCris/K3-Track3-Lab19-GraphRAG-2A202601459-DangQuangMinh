@@ -19,6 +19,12 @@ env/
 
 # Large Datasets and data dumps (do not commit 300MB data dumps)
 golden_dataset.csv
+data/hackernoon_subset.csv
+
+# LLM intermediate caches / checkpoints (để mỗi lần chấm là một lần chạy thật)
+outputs/coref_cache.csv
+outputs/raw_triples_cache.csv
+outputs/graphrag_eval_checkpoint.csv
 !reports/*.csv
 *.jsonl
 *.parquet

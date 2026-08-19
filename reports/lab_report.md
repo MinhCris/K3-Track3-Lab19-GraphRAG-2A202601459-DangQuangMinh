@@ -1,85 +1,85 @@
 # Báo Cáo Thực Hành & Thuyết Minh Kỹ Thuật — Lab 19: GraphRAG vs Flat RAG
 
-**Học viên:** [Họ và Tên]  
-**Khóa học:** AICB-K34 · Track 3: GraphRAG  
-**Ngày thực hiện:** [Ngày/Tháng/Năm]  
+**Học viên:** Đặng Quang Minh (2A202601459)
+**Khóa học:** AICB-K34 · Track 3: GraphRAG
+**Ngày thực hiện:** 19/08/2026
+**Môi trường:** Google Colab + Neo4j AuraDB Free · Generator/Extractor: `openai/gpt-4o-mini` (OpenRouter, fallback do Groq key hết hạn) · Judge: `google/gemini-2.5-flash` (cố ý khác model sinh để giảm self-preference bias)
+
+> **Quy ước:** các ô đánh dấu ⬜ được điền từ output của **lần chạy Colab chính thức** (nguồn ghi kèm từng ô). Mọi nội dung còn lại là quyết định thiết kế và sự kiện có thật trong quá trình làm bài.
 
 ---
 
 ## 📌 PHẦN 1: THUYẾT MINH KỸ THUẬT & PHÂN TÍCH CA LỖI
 
 ### 1. Coreference Resolution (Phân giải đại từ)
-> **Tình huống thực tế:** Nêu ít nhất 1 tình huống cụ thể trong dữ liệu HackerNoon mà cơ chế Coreference Resolution phân giải sai hoặc gặp khó khăn. Hậu quả của nó đối với Knowledge Graph là gì?
 
 *Trả lời:*
-- **Ví dụ từ dữ liệu:** [Trích dẫn chunk_id hoặc câu văn cụ thể]
-- **Hiện tượng:** [Ví dụ: 'The company' bị nhầm sang công ty được nhắc đến ở câu trước thay vì chủ ngữ chính]
-- **Hậu quả đối với Graph:** [Ví dụ: Tạo ra False Edge gán nhầm sự kiện M&A cho đối thủ cạnh tranh]
+- **Đặc thù dữ liệu:** mỗi bản ghi của corpus (mirror `MongoDB/tech-news-embeddings`) chỉ gồm `title + description` (~40–50 từ), nên mỗi bài = 1 chunk. Đại từ/cụm generic (`the company`, `it`, `they`) xuất hiện chủ yếu trong `description` và tiền ngữ thường nằm ở `title`.
+- **Ví dụ từ dữ liệu:** ⬜ [chép từ phần "Spot-check" in ra ở cell 1.7 — chunk_id + câu GỐC vs RESOLVED]
+- **Tình huống phân giải sai/khó:** nhiều bản tin dạng điểm tin nhắc ≥2 công ty ngay trong title (ví dụ các bài dạng "X and Y Partner to..."). Khi description viết "the company announced...", tiền ngữ mơ hồ giữa X và Y; theo quy tắc conservative, model phải giữ nguyên và ghi vào `unresolved_mentions` — mọi trường hợp model vẫn "đoán" là một ca sai tiềm năng.
+- **Hậu quả đối với Graph:** phân giải sai chủ ngữ ⇒ NER+RE trích ra **false edge** gán sự kiện (ACQUIRED / INVESTED_IN...) cho nhầm công ty. False edge nguy hiểm hơn missing edge vì BFS traversal sẽ lan truyền dữ kiện sai vào context của mọi câu hỏi đi qua node đó, kèm cả "evidence" trông có vẻ hợp lệ.
+- **Biện pháp đã cài đặt:** prompt conservative (chỉ resolve khi tiền ngữ rõ trong cùng chunk, cấm bịa, giữ nguyên số/ngày/ticker), log `unresolved_mentions`, batch nào lỗi thì fallback giữ nguyên văn bản gốc và đánh dấu `COREF_BATCH_FAILED` thay vì làm hỏng dữ liệu.
 
 ---
 
 ### 2. Entity Resolution Threshold & Lexical Guard
-> **Ngưỡng & Cơ chế Guard:** Bạn chọn ngưỡng cosine similarity là bao nhiêu cho vector matching? Trích dẫn 1 cặp thực thể có độ tương đồng vector cao ($> 0.85$) nhưng bị Lexical Guard chặn không cho gộp (Reject) và giải thích lý do.
 
 *Trả lời:*
-- **Ngưỡng cosine similarity:** `threshold = ...` (ví dụ: 0.90)
-- **Cặp thực thể bị Guard chặn:** `[Thực thể A]` vs `[Thực thể B]` (Ví dụ: `Sam Altman` vs `Steve Altman` hoặc `Apple` vs `Apple Music`)
-- **Lý do chặn:** [Lý do ngữ nghĩa tại sao không được gộp 2 thực thể này]
+- **Ngưỡng cosine similarity:** `threshold = 0.90` cho quyết định merge (ANN top-5, embedding MiniLM-L6-v2 chuẩn hóa). Ngoài ra mọi cặp candidate có similarity ≥ `0.80` đều được ghi vào audit với nhãn `REJECT_THRESHOLD` để hậu kiểm near-miss — audit vì thế luôn minh bạch và đủ dày.
+- **Cặp bị Guard chặn (similarity > 0.85):** ⬜ [chép 1 dòng `REJECT_GUARD` từ bảng audit cell 2.2 / `outputs/entity_resolution_audit.csv`]. Trong lần chạy thử khi phát triển bài, cặp điển hình là `generative AI` vs `Generative AI Solution` (cosine ≈ 0.91): vector coi là gần nhau nhưng một bên là công nghệ tổng quát, một bên là tên sản phẩm cụ thể — gộp sẽ làm sai lệch mọi quan hệ DEVELOPED/USES đi qua node này.
+- **Cơ chế guard (thiết kế theo loại thực thể):**
+  - `Person`: họ (token cuối) phải trùng tuyệt đối, tên phải là prefix/viết tắt của nhau ⇒ chặn *Sam Altman* vs *Steve Altman* dù vector similarity rất cao.
+  - `Company/Technology`: nếu tên A là token-subset thực sự của tên B và phần thừa không phải hậu tố doanh nghiệp (Inc/Corp/Platforms...) ⇒ nghi là product/sub-brand, từ chối merge (*Apple* vs *Apple Watch*, *Microsoft* vs *Microsoft Teams*), nhưng *Meta* vs *Meta Platforms* vẫn merge nhờ strip suffix.
+  - **Ngoại lệ học từ dữ liệu thật:** guard token-subset ban đầu chặn oan `Amazon Web Services` vs `Amazon Web Services (AWS)` (cosine ≈ 0.93) — token thừa "AWS" chính là chữ viết tắt. Đã bổ sung rule: token thừa duy nhất == initials của phần còn lại ⇒ cho phép merge. Đây là ví dụ điển hình vì sao audit table quan trọng: không có audit sẽ không phát hiện false-reject này.
 
 ---
 
 ### 3. Đồ thị & Super-node Mitigation
-> **Đặc trưng đồ thị & Cắt tỉa cạnh:** Top 3 thực thể có bậc (degree) cao nhất trong đồ thị là gì? Việc ưu tiên lấy $N$ cạnh ($N=50$) có `published_date` mới nhất tại các Super-node mang lại ưu điểm gì và có rủi ro tiềm ẩn nào?
 
 *Trả lời:*
-- **Top 3 Super-nodes:**
+- **Top 3 Super-nodes** (nguồn: cell 2.4 / `outputs/top_degree_nodes.csv`):
 
 | Hạng | Tên thực thể | Loại thực thể (Type) | Bậc kết nối (Degree) |
 |------|--------------|---------------------|----------------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
+| 1 | ⬜ | ⬜ | ⬜ |
+| 2 | ⬜ | ⬜ | ⬜ |
+| 3 | ⬜ | ⬜ | ⬜ |
 
-- **Ưu điểm & Rủi ro của Temporal Mitigation:**
-  - *Ưu điểm:* [Giảm thiểu bùng nổ context, giữ lại thông tin cập nhật nhất...]
-  - *Rủi ro:* [Nếu câu hỏi liên quan đến sự kiện lịch sử trong quá khứ xa có thể bị cắt mất...]
+- **Lưu ý trung thực về quy mô:** với scale guard 400 chunks trích xuất, đồ thị lab không tạo ra node degree > 100, nên policy được kiểm chứng bằng 2 cách: (1) `test_supernode_policy()` trên node bậc cao nhất, (2) `test_supernode_policy_simulated()` ép node bậc cao nhất qua cap và assert 2 bất biến: số edge trả về ≤ 50 và sort đúng `published_date DESC`. Ở scale thật (350MB) các hub như Microsoft/Google chắc chắn vượt 100.
+- **Ưu điểm của temporal cap (50 edge mới nhất):** chặn bùng nổ context/token tại hub; tin mới thường phản ánh trạng thái quan hệ hiện hành (deal đã đóng thay vì mới công bố); kết hợp `GLOBAL_EDGE_CAP = 250` và `MAX_GRAPH_CONTEXT_CHARS = 14000` tạo 3 tầng chặn.
+- **Rủi ro:** câu hỏi lịch sử ("thương vụ năm 2021...") có thể bị cắt mất edge cũ tại hub; degree tính cả 2 chiều nên node bị nhiều nguồn nhắc tới (được trỏ đến nhiều) chịu cap dù edge chủ động ít. Hướng khắc phục ở production: cap theo *relation type* (giữ tối thiểu k edge mỗi loại quan hệ) hoặc lọc theo khung thời gian suy ra từ câu hỏi trước khi áp cap.
 
 ---
 
 ### 4. So sánh Thực nghiệm (Flat RAG vs GraphRAG)
 
-#### Bảng tổng hợp Benchmark (LLM-as-a-Judge):
+Golden Dataset: **50 câu** (5 factoid · 23 multi-hop · 22 cross-doc) từ `data/graphrag_golden_50_first5000.csv`, đầy đủ `reference_answer`. Lưu ý kỹ thuật quan trọng: row-id trong file golden được đánh trên một bản tiền xử lý khác của dataset, nên pipeline khớp 51 bài evidence **theo nội dung (published_at + title)** — đã xác minh đủ 51/51 — và ưu tiên đưa các bài này vào corpus 1500 bài + ngân sách 400 chunks trích xuất.
 
-| Tiêu chí đánh giá | Flat RAG | GraphRAG | Độ chênh lệch ($\Delta$) | Nhận xét phân tích |
+#### Bảng tổng hợp Benchmark (LLM-as-a-Judge) — nguồn: `outputs/graphrag_vs_flatrag_summary.csv`, hàng "TẤT CẢ":
+
+| Tiêu chí đánh giá | Flat RAG | GraphRAG | Độ chênh lệch (Δ) | Nhận xét phân tích |
 |-------------------|----------|----------|--------------------------|-------------------|
-| **Comprehensiveness (1–5)** | | | | |
-| **Faithfulness (1–5)** | | | | |
-| **Multi-hop Reasoning (1–5)** | | | | |
-| **Latency trung bình (s)** | | | | |
-| **Token usage trung bình** | | | | |
+| **Comprehensiveness (1–5)** | ⬜ | ⬜ | ⬜ | ⬜ |
+| **Faithfulness (1–5)** | ⬜ | ⬜ | ⬜ | ⬜ |
+| **Multi-hop Reasoning (1–5)** | ⬜ | ⬜ | ⬜ | ⬜ |
+| **Latency trung bình (s)** | ⬜ | ⬜ | ⬜ | Latency đo end-to-end: GraphRAG gồm cả seed extraction (1 LLM call) + BFS Neo4j |
+| **Token usage trung bình** | ⬜ | ⬜ | ⬜ | GraphRAG dùng context kép (GRAPH + VECTOR) nên token cao hơn |
 
-#### Phân tích 2 Ca lỗi Điển hình:
-1. **Ca lỗi Flat RAG thất bại (GraphRAG thành công):**
-   - *Question ID & Câu hỏi:* 
-   - *Tại sao Flat RAG thất bại?* [Ví dụ: Vector search không kết nối được 2 chunks chứa thông tin rời rạc...]
-   - *GraphRAG đã giải quyết như thế nào?* [Ví dụ: Graph traversal qua cạnh A -> B -> C...]
-2. **Ca lỗi GraphRAG thất bại (hoặc cả hai cùng sai):**
-   - *Question ID & Câu hỏi:* 
-   - *Nguyên nhân:* [Ví dụ: Thiếu seed entity, missing edge trong bước extraction, hoặc super-node cap cắt mất cạnh...]
-   - *Đề xuất khắc phục:* [...]
+#### Phân tích 2 Ca lỗi Điển hình (chi tiết trong `reports/failure_analysis.md`):
+1. **Ca Flat RAG thất bại (GraphRAG thành công):** ⬜ [chọn từ `outputs/graphrag_eval_results.csv` — câu có `graph_comprehensiveness − flat_comprehensiveness` lớn nhất; xem snippet chọn ca trong failure_analysis.md]
+2. **Ca GraphRAG thất bại / cả hai cùng kém:** ⬜ [câu có delta âm nhất; truy vết theo quy trình root-cause trong failure_analysis.md]
 
 ---
 
 ### 5. Đánh đổi (Trade-offs) & Kiểm soát AI Coding Agent
-> **Trade-offs, Agent Control & Scale 350MB:** 
-> - So sánh sự đánh đổi giữa GraphRAG vs Flat RAG về Latency, Token và Indexing Overhead.
-> - Trong lúc làm bài, AI Coding Agent từng đề xuất điều gì mà bạn **từ chối áp dụng**? Tại sao?
-> - Nếu scale lên toàn bộ 350MB (~100,000 bài báo), bottleneck đầu tiên ở đâu và giải pháp xử lý là gì?
 
 *Trả lời:*
-- **Đánh đổi Quality vs Cost vs Latency:** [...]
-- **Quyết định từ chối AI Coding Agent:** [Ví dụ: Từ chối thuật toán $O(N^2)$ pairwise cosine trên toàn bộ dataset vì gây tràn RAM/OOM...]
-- **Giải pháp scale 350MB:** [Ví dụ: Async batch extraction với worker queue, HNSW index với blocking cho Entity Resolution, Community Partitioning...]
+- **Đánh đổi Quality vs Cost vs Latency:** GraphRAG trả giá bằng (1) chi phí indexing một lần rất lớn — mỗi chunk qua 2 lượt LLM (coref + NER/RE), tức ~800 LLM calls cho 400 chunks, trong khi Flat RAG chỉ cần encode embedding cục bộ; (2) mỗi query thêm 1 LLM call (seed extraction) + các truy vấn Cypher; (3) token/query cao hơn do context kép. Đổi lại, GraphRAG nối được dữ kiện nằm rải rác ở nhiều bài (multi-hop/cross-doc) mà top-k vector không gom đủ, và mỗi dữ kiện đều mang provenance (`chunk_id`, `published_date`, `evidence`) kiểm chứng được. Với câu factoid đơn giản, Flat RAG là đủ và rẻ hơn — đúng như kỳ vọng của bài giảng.
+- **Đề xuất của AI Coding Agent mà tôi từ chối:**
+  1. *Commit sẵn cache LLM (coref/triples/eval-checkpoint) vào repo để lần chạy chấm bài "ăn" cache cho nhanh, rẻ* — từ chối: bài chấm phải là một lần chạy thật end-to-end; cache chỉ dùng làm cơ chế resume nội bộ khi bị ngắt giữa chừng, và đã đưa vào `.gitignore`.
+  2. *Chạy song song vòng eval 50 câu (ThreadPool) để tiết kiệm thời gian* — từ chối: số đo latency per-query sẽ bị nhiễu do tranh chấp tài nguyên/rate-limit, và checkpoint theo thứ tự sẽ phức tạp; chỉ song song hóa 2 bước indexing (coref, extraction) là nơi latency không phải số liệu báo cáo.
+  3. *Near-dedup bằng pairwise cosine toàn dataset* — từ chối vì O(N²); thay bằng FAISS ANN top-k, O(N·k) (đúng ràng buộc Challenge A).
+- **Giải pháp khi scale 350MB (~450k bài):** bottleneck đầu tiên là **LLM extraction** (450k chunks × 2 calls ≈ 900k calls — vài nghìn USD và nhiều ngày nếu chạy tuần tự). Kiến trúc đề xuất: (1) hàng đợi worker async (queue + retry + dead-letter) cho coref/NER-RE, chạy batch qua API batch giá rẻ; (2) lọc trước bằng heuristic rẻ (NER thống kê/spaCy) để chỉ gửi LLM những chunk có ≥2 thực thể tiềm năng; (3) Entity Resolution chuyển sang HNSW + blocking theo ký tự đầu/loại thực thể thay vì IndexFlat; (4) Neo4j: giữ `UNWIND` batch nhưng tách transaction theo relation type, thêm index phụ theo `published_date` cho truy vấn temporal cap; (5) chấm điểm bằng sampling + judge theo tầng (model rẻ lọc, model đắt phân xử ca sát nút).
 
 ---
 
@@ -88,35 +88,30 @@
 ### 1. Mapping Bài giảng vào Code
 | Khái niệm trong bài giảng | Module tương ứng | Hàm / Khối code cụ thể | Quan sát thực tế & Đánh giá |
 |--------------------------|------------------|------------------------|-----------------------------|
-| **Conservative Coreference** | Module 1 | `resolve_coref_batch()` | ... |
-| **Schema & Allowlist Guard** | Module 2 | `ALLOWED_NODE_TYPES`, `ALLOWED_RELATIONS` | ... |
-| **Bulk Cypher Ingestion** | Module 2 | `bulk_insert_nodes()`, `bulk_insert_edges()` | ... |
-| **Entity Resolution & Union-Find** | Module 3 | `build_resolution_map()`, `UF` | ... |
-| **Super-node Degree Cap** | Module 4 | `retrieve_graph_context()` | ... |
-| **LLM-as-a-Judge Evaluation** | Module 5 | `judge_answer()` | ... |
-
----
+| **Conservative Coreference** | Module 1 | `COREF_SYSTEM`, `resolve_coref_batch()`, `run_coref()` | Chunk ngắn (title+description) nên tiền ngữ thường nằm trong title; quy tắc "ambiguous thì giữ nguyên + log" quan trọng hơn độ phủ |
+| **Schema & Allowlist Guard** | Module 2 | `ALLOWED_NODE_TYPES`, `ALLOWED_RELATIONS`, filter trong `run_extraction()` | Relation ngoài allowlist bị loại trước khi chạm Cypher — vừa chống schema drift vừa chống injection vào câu lệnh |
+| **Bulk Cypher Ingestion** | Module 2 | `bulk_insert_nodes()`, `bulk_insert_edges()` với `UNWIND $rows`, batch 1000 | Edge key gồm `source_chunk_id` nên re-run idempotent; `reset_graph()` đảm bảo Restart & Run All sạch |
+| **Entity Resolution & Union-Find** | Module 3 | `build_resolution_map()`, `merge_guard()`, class `UF` | Guard theo loại thực thể + audit 3 nhãn (`MERGE_*`/`REJECT_*`) giúp phát hiện cả false-merge lẫn false-reject (ca AWS) |
+| **Super-node Degree Cap** | Module 4 | `retrieve_graph_context()`, `recent_edges()`, `test_supernode_policy_simulated()` | 3 tầng chặn: cap 50/node · `GLOBAL_EDGE_CAP=250` · `MAX_GRAPH_CONTEXT_CHARS=14000` |
+| **LLM-as-a-Judge Evaluation** | Module 5 | `judge_answer()`, `run_evaluation()` + checkpoint/resume | Judge dùng model khác generator; chấm 3 tiêu chí kèm rationale; checkpoint cho phép resume khi đứt giữa chừng |
 
 ### 2. Quá trình Debugging & Bài học
-- **Lỗi kỹ thuật phức tạp nhất gặp phải:** [...]
-- **Cách bạn đã xử lý thành công:** [...]
-
----
+- **Lỗi khó nhất:** Jupyter kernel **chết không thông báo lỗi** (DeadKernelError) đúng tại thời điểm FAISS chạy op song song đầu tiên ngay sau khi torch encode xong. Truy vết: chạy lại từng đoạn ngoài notebook thì bình thường ⇒ nghi khác biệt môi trường kernel; phát hiện kernelspec `python3` trỏ sang một Python khác (anaconda) chứ không phải venv của dự án, và bản chất lỗi là **hai OpenMP runtime** (libomp của torch + libiomp5 của MKL) cùng nạp vào một tiến trình. Xử lý: đăng ký kernelspec riêng trỏ đúng venv + set `KMP_DUPLICATE_LIB_OK=TRUE`, `OMP_NUM_THREADS=1`, `faiss.omp_set_num_threads(1)` ngay đầu notebook. Bài học: segfault ở thư viện native không hiện traceback Python — phải nghi ngờ tầng môi trường trước khi nghi code.
+- **Lỗi dữ liệu "ngầm" quan trọng nhất:** row-id trong Golden Dataset không khớp CSV gốc (golden được sinh trên một frame đã tiền xử lý khác). Nếu cứ tin row-id, corpus sẽ **thiếu bài evidence** và GraphRAG thua oan. Xử lý: parse `(published_at, title)` từ `reference_evidence` và khớp theo nội dung — xác minh đủ 51/51 bài trong ~8.5k dòng đầu. Bài học: luôn audit giả định về khóa nối giữa 2 nguồn dữ liệu trước khi build pipeline phía sau.
+- **Sự cố vận hành:** Groq API key hết hạn giữa chừng ⇒ viết wrapper route sang endpoint OpenAI-compatible (OpenRouter) mà không đổi interface các hàm phía sau (`groq_chat` giữ nguyên chữ ký); TensorFlow cũ trong môi trường xung đột Keras 3 ⇒ `USE_TF=0` ép transformers chỉ dùng PyTorch.
 
 ### 3. Kế hoạch Áp dụng vào Đồ án Thực tế (Action Plan)
-- **Tên đồ án / Dự án:** [Tên dự án]
-- **Đặc thù bài toán & Lý do chọn giải pháp:** [Tại sao bài toán của bạn cần GraphRAG hay chỉ cần Flat/Hybrid RAG?]
-- **Cấu trúc Node & Relation dự kiến:**
-  - Nodes: `...`
-  - Relations: `...`
-- **Chiến lược xử lý Super-node & Entity Resolution:** [...]
+- **Tên đồ án / Dự án:** ⬜ [cần bạn mô tả đồ án — sẽ hoàn thiện mục này]
+- **Đặc thù bài toán & Lý do chọn giải pháp:** ⬜
+- **Cấu trúc Node & Relation dự kiến:** ⬜
+- **Chiến lược xử lý Super-node & Entity Resolution:** ⬜
 
 ---
 
 ## 🎯 TỰ ĐÁNH GIÁ
 | Tiêu chí | Điểm tự chấm (1–5) | Ghi chú |
 |----------|-------------------|---------|
-| Mức độ hiểu bài giảng GraphRAG | | |
-| Khả năng kiểm soát AI Coding Agent | | |
-| Chất lượng đồ thị tri thức xây dựng | | |
-| Khả năng phân tích và debug hệ thống | | |
+| Mức độ hiểu bài giảng GraphRAG | ⬜ | |
+| Khả năng kiểm soát AI Coding Agent | ⬜ | |
+| Chất lượng đồ thị tri thức xây dựng | ⬜ | |
+| Khả năng phân tích và debug hệ thống | ⬜ | |
